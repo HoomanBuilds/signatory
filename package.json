@@ -1,0 +1,27 @@
+{
+  "name": "signatory",
+  "version": "1.0.0",
+  "description": "<p align=\"center\">   <img src=\"frontend/public/favicon.png\" width=\"120\" alt=\"SIGNATORY Logo\"> </p>",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HoomanBuilds/Signatory.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/HoomanBuilds/Signatory/issues"
+  },
+  "homepage": "https://github.com/HoomanBuilds/Signatory#readme",
+  "dependencies": {
+    "docx": "^9.6.1"
+  }
+}
