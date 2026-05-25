@@ -5,10 +5,9 @@
  */
 
 import { signAgentTransaction } from "@/lib/lit-protocol";
-import { getCronosTestnetProvider } from "@/lib/ethers-provider";
-import { 
-  getSepoliaProvider, 
-  SEPOLIA_TOKENS, 
+import { getCronosTestnetProvider, getSepoliaProvider } from "@/lib/ethers-provider";
+import {
+  SEPOLIA_TOKENS,
   UNISWAP_CONTRACTS,
   buildSwapTx,
   buildApprovalTx,
@@ -23,6 +22,7 @@ import AgentNFTAbi from "@/constants/AgentNFT.json";
 import contractAddresses from "@/constants/contractAddresses.json";
 
 const CRONOS_TESTNET_CHAIN_ID = "338";
+const CRONOS_CHAIN_ID = 338;
 const SEPOLIA_CHAIN_ID = 11155111;
 
 type ChainAddresses = {
@@ -104,7 +104,7 @@ export async function executeAgentSwap({
   
   console.log(`[Swap Action] Checking balance for ${evmAddress} on Sepolia...`);
   console.log(`[Swap Action] Is native ETH: ${isNativeETH}`);
-  
+
   if (isNativeETH) {
     balance = await getEthBalance(evmAddress);
     console.log(`[Swap Action] ETH balance (raw): ${balance.toString()}`);
@@ -120,7 +120,7 @@ export async function executeAgentSwap({
 
   const sepoliaProvider = getSepoliaProvider();
 
-  // Get nonce and gas price for Sepolia
+  // Get nonce and gas price for Sepolia (where Uniswap V3 lives)
   let nonce = await sepoliaProvider.getTransactionCount(evmAddress);
   const gasPrice = await sepoliaProvider.getGasPrice();
   
@@ -187,7 +187,7 @@ export async function executeAgentSwap({
       data: swapTx.data,
       chainId: SEPOLIA_CHAIN_ID,
       nonce: nonce,
-      gasLimit: ethers.BigNumber.from("500000").toString(), 
+      gasLimit: ethers.BigNumber.from("500000").toString(),
       gasPrice: gasPrice.toString(),
     },
     "sepolia"
@@ -271,19 +271,18 @@ export async function purchaseCreditsWithPKP({
 
     console.log(`[Auto-Pay] PKP address: ${evmAddress}`);
 
-    // Check PKP balance on Sepolia
-    const sepoliaProvider = getSepoliaProvider();
-    const balance = await sepoliaProvider.getBalance(evmAddress);
+    // Check PKP balance on Cronos Testnet
+    const balance = await cronosProvider.getBalance(evmAddress);
     
-    // Credit price: 0.0001 ETH per credit
+    // Credit price: 0.0001 TCRO per credit
     const creditPriceWei = ethers.utils.parseEther("0.0001").mul(creditAmount);
-    const gasBuffer = ethers.utils.parseEther("0.0005"); 
+    const gasBuffer = ethers.utils.parseEther("0.0005");
     const requiredBalance = creditPriceWei.add(gasBuffer);
 
     if (balance.lt(requiredBalance)) {
-      return { 
-        success: false, 
-        error: `Insufficient PKP balance. Need ${ethers.utils.formatEther(requiredBalance)} ETH, have ${ethers.utils.formatEther(balance)} ETH` 
+      return {
+        success: false,
+        error: `Insufficient PKP balance. Need ${ethers.utils.formatEther(requiredBalance)} TCRO, have ${ethers.utils.formatEther(balance)} TCRO`
       };
     }
 
@@ -291,11 +290,11 @@ export async function purchaseCreditsWithPKP({
     const AgentCreditsInterface = new ethers.utils.Interface([
       "function purchaseCredits(uint256 amount) external payable"
     ]);
-    
+
     const txData = AgentCreditsInterface.encodeFunctionData("purchaseCredits", [creditAmount]);
 
-    const nonce = await sepoliaProvider.getTransactionCount(evmAddress);
-    const gasPrice = await sepoliaProvider.getGasPrice();
+    const nonce = await cronosProvider.getTransactionCount(evmAddress);
+    const gasPrice = await cronosProvider.getGasPrice();
 
     console.log("[Auto-Pay] Signing purchaseCredits transaction...");
     const signedTx = await signAgentTransaction(
@@ -308,17 +307,17 @@ export async function purchaseCreditsWithPKP({
         to: addresses.AgentCredits,
         value: creditPriceWei.toString(),
         data: txData,
-        chainId: SEPOLIA_CHAIN_ID,
+        chainId: CRONOS_CHAIN_ID,
         nonce: nonce,
         gasLimit: "150000",
         gasPrice: gasPrice.toString(),
       },
-      "sepolia"
+      "cronos-testnet"
     );
 
     // Broadcast
     console.log("[Auto-Pay] Broadcasting transaction...");
-    const txReceipt = await sepoliaProvider.sendTransaction(signedTx);
+    const txReceipt = await cronosProvider.sendTransaction(signedTx);
     const confirmation = await txReceipt.wait();
 
     console.log(`[Auto-Pay] Success! Tx: ${confirmation.transactionHash}`);

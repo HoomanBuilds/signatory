@@ -8,16 +8,15 @@ import {
 } from "@/lib/vectordb";
 import axios from "axios";
 import { recordAgentChat } from "@/lib/agent-contract";
-import { sepolia } from "viem/chains";
 import { getAuthenticatedAddress } from "@/lib/auth";
 import contractAddresses from "@/constants/contractAddresses.json";
+import { CHAIN_ID_STRING, cronosTestnet } from "@/lib/config";
 import { tool } from "ai";
 import { z } from "zod";
 import { executeAgentSwap } from "@/lib/agent-actions";
 
 // Get NFT contract address for session credits
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || "11155111";
-const CHAIN_ID_STRING = CHAIN_ID as "31337" | "11155111" | "338" | "97";
+const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || "338";
 const NFT_CONTRACT_ADDRESS = contractAddresses[CHAIN_ID_STRING]?.AgentNFT;
 
 // Configuration
@@ -221,7 +220,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
           pkpPublicKey: data.pkpPublicKey,
           pkpAddress: data.pkpAddress,
           verificationChainId: parseInt(CHAIN_ID),
-          verificationRpcUrl: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
+          verificationRpcUrl: process.env.RPC_URL || "https://evm-t3.cronos.org",
         });
         return new Response(
           `✅ **Meme Token Created!**\n\n- Token: ${data.name} ($${data.ticker})\n- Address: \`${result.tokenAddress || "pending"}\`\n- Tx: \`${result.txHash}\`\n- [View on BscScan](https://bscscan.com/tx/${result.txHash})`,
@@ -250,7 +249,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
           pkpPublicKey: data.pkpPublicKey,
           pkpAddress: data.pkpAddress,
           verificationChainId: parseInt(CHAIN_ID),
-          verificationRpcUrl: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
+          verificationRpcUrl: process.env.RPC_URL || "https://evm-t3.cronos.org",
         });
         return new Response(
           `✅ **Buy Successful!**\n\n- Spent: ${data.amountBNB} BNB\n- Estimated tokens: ${result.estimatedTokens || "N/A"}\n- Tx: \`${result.txHash}\`\n- [View on BscScan](https://bscscan.com/tx/${result.txHash})`,
@@ -279,7 +278,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
           pkpPublicKey: data.pkpPublicKey,
           pkpAddress: data.pkpAddress,
           verificationChainId: parseInt(CHAIN_ID),
-          verificationRpcUrl: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s1.binance.org:8545",
+          verificationRpcUrl: process.env.RPC_URL || "https://evm-t3.cronos.org",
         });
         return new Response(
           `✅ **Sell Successful!**\n\n- Sold: ${data.tokenAmount} tokens\n- Estimated BNB: ${result.estimatedBNB || "N/A"}\n- Tx: \`${result.txHash}\`\n- [View on BscScan](https://bscscan.com/tx/${result.txHash})`,
@@ -293,15 +292,17 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
       }
     }
 
-    // Fetch the agent's PKP wallet address
+    // Fetch the agent's PKP wallet address and public key
     let agentWalletAddress = "";
+    let agentPkpPublicKey = "";
     try {
       const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
       const pkpResponse = await fetch(`${baseUrl}/api/agent-pkp?agentTokenId=${agentId}`);
       if (pkpResponse.ok) {
         const pkpData = await pkpResponse.json();
         agentWalletAddress = pkpData.evmAddress || "";
-        console.log(`[Chat] Agent ${agentId} wallet address: ${agentWalletAddress}`);
+        agentPkpPublicKey = pkpData.publicKey || "";
+        console.log(`[Chat] Agent ${agentId} wallet: ${agentWalletAddress}, PKP: ${agentPkpPublicKey ? "found" : "missing"}`);
       }
     } catch (err) {
       console.error("[Chat] Failed to fetch agent PKP wallet:", err);
@@ -362,7 +363,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
         }),
         execute: async ({ name, ticker, description, imageUrl }: { name: string; ticker: string; description: string; imageUrl?: string }) => {
           console.log(`[Chat Tool] create_meme_token called: ${name} ($${ticker})`);
-          return `MEME_CREATE_CONFIRMATION:${JSON.stringify({ name, ticker, description, imageUrl, walletAddress: agentWalletAddress })}`;
+          return `MEME_CREATE_CONFIRMATION:${JSON.stringify({ name, ticker, description, imageUrl, walletAddress: agentWalletAddress, pkpPublicKey: agentPkpPublicKey, pkpAddress: agentWalletAddress })}`;
         },
       }),
       buy_meme_token: tool({
@@ -373,7 +374,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
         }),
         execute: async ({ tokenAddress, amountBNB }: { tokenAddress: string; amountBNB: string }) => {
           console.log(`[Chat Tool] buy_meme_token called: ${amountBNB} BNB for ${tokenAddress}`);
-          return `MEME_BUY_CONFIRMATION:${JSON.stringify({ tokenAddress, amountBNB, walletAddress: agentWalletAddress })}`;
+          return `MEME_BUY_CONFIRMATION:${JSON.stringify({ tokenAddress, amountBNB, walletAddress: agentWalletAddress, pkpPublicKey: agentPkpPublicKey, pkpAddress: agentWalletAddress })}`;
         },
       }),
       sell_meme_token: tool({
@@ -384,7 +385,7 @@ Your tokens will arrive on ${bridgeData.dstChain} shortly.`;
         }),
         execute: async ({ tokenAddress, tokenAmount }: { tokenAddress: string; tokenAmount: string }) => {
           console.log(`[Chat Tool] sell_meme_token called: sell ${tokenAmount} of ${tokenAddress}`);
-          return `MEME_SELL_CONFIRMATION:${JSON.stringify({ tokenAddress, tokenAmount, walletAddress: agentWalletAddress })}`;
+          return `MEME_SELL_CONFIRMATION:${JSON.stringify({ tokenAddress, tokenAmount, walletAddress: agentWalletAddress, pkpPublicKey: agentPkpPublicKey, pkpAddress: agentWalletAddress })}`;
         },
       }),
       get_trending_meme_tokens: tool({
@@ -609,7 +610,7 @@ export async function POST(req: NextRequest) {
           error: "Insufficient credits. Payment required.",
           paymentRequired: {
             type: "smart-contract-call",
-            chainId: sepolia.id,
+            chainId: cronosTestnet.id,
             contractAddress: AGENT_CREDITS_ADDRESS,
             abi: AGENT_CREDITS_ABI_EXPORT,
             functionName: "purchaseCredits",
@@ -661,7 +662,7 @@ export async function POST(req: NextRequest) {
         error: "Session expired. Payment required.",
         paymentRequired: {
           type: "smart-contract-call",
-          chainId: sepolia.id,
+          chainId: cronosTestnet.id,
           contractAddress: AGENT_CREDITS_ADDRESS,
           abi: AGENT_CREDITS_ABI_EXPORT,
           functionName: "purchaseSession",
