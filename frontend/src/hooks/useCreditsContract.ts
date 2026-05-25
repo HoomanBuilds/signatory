@@ -193,7 +193,7 @@ export function useCreditsContract() {
         abi: AgentCreditsAbi,
         functionName: "claimFreeTier",
         args: [],
-        chain: undefined
+
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -250,7 +250,7 @@ export function useCreditsContract() {
         functionName: "purchaseCredits",
         args: [BigInt(amount)],
         value: totalCost,
-        chain: undefined
+
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -313,7 +313,7 @@ export function useCreditsContract() {
         functionName: "purchasePlan",
         args: [BigInt(planId)],
         value: plan.price,
-        chain: undefined
+
       });
 
       const receipt = await publicClient.waitForTransactionReceipt({ hash });

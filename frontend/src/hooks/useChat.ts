@@ -160,7 +160,7 @@ export function useChat(
          hash = await walletClient.sendTransaction({
            to: recipient,
            value: BigInt(parseFloat(amount) * 1e18),
-           chain: undefined
+
          });
       } else if (type === "smart-contract-call") {
          hash = await walletClient.writeContract({
@@ -169,7 +169,7 @@ export function useChat(
             functionName: functionName,
             args: args as any,
             value: BigInt(parseFloat(value) * 1e18),
-            chain: undefined
+ 
          });
       } else {
          throw new Error("Unsupported payment method");
@@ -204,7 +204,7 @@ export function useChat(
            hash = await walletClient.sendTransaction({
              to: recipient,
              value: BigInt(parseFloat(amount) * 1e18),
-             chain: undefined
+  
            });
         } else if (type === "smart-contract-call") {
            hash = await walletClient.writeContract({
@@ -213,7 +213,7 @@ export function useChat(
               functionName: functionName,
               args: args as any,
               value: BigInt(parseFloat(value) * 1e18),
-              chain: undefined
+   
            });
         } else {
            throw new Error("Unsupported payment method");

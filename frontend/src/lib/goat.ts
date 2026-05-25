@@ -77,7 +77,7 @@ export async function getEthBalance(address: string): Promise<ethers.BigNumber> 
   console.log(`[getEthBalance] Fetching balance for: ${address}`);
   
   // Try direct RPC call to debug
-  const rpcUrl = "https://eth-sepolia.g.alchemy.com/v2/A_0usON465b2gUAMboNs3";
+  const rpcUrl = process.env.SEPOLIA_RPC_URL || process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com";
   try {
     const response = await fetch(rpcUrl, {
       method: 'POST',

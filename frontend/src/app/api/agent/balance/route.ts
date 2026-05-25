@@ -12,7 +12,7 @@ import { getAuthenticatedAddress } from "@/lib/auth";
 
 const CHAINS: Record<string, { rpcUrl: string; chainId: number; symbol: string }> = {
   sepolia: { 
-    rpcUrl: process.env.SEPOLIA_RPC_URL || "https://eth-sepolia.g.alchemy.com/v2/A_0usON465b2gUAMboNs3", 
+    rpcUrl: process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
     chainId: 11155111, 
     symbol: "ETH" 
   },

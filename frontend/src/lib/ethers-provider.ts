@@ -22,7 +22,7 @@ const NETWORKS = {
   sepolia: {
     name: "sepolia",
     chainId: 11155111,
-    rpcUrl: "https://eth-sepolia.g.alchemy.com/v2/A_0usON465b2gUAMboNs3",
+    rpcUrl: process.env.SEPOLIA_RPC_URL || process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
   },
   bsc_testnet: {
     name: "bsc-testnet",
