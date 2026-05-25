@@ -1,53 +1,14 @@
-import { createPublicClient, http, type Chain } from "viem";
-import { sepolia, hardhat } from "viem/chains";
+import { createPublicClient, http } from "viem";
 import AgentNFTABI from "@/constants/AgentNFT.json";
 import contractAddresses from "@/constants/contractAddresses.json";
+import { CHAIN_ID_STRING, getViemChain } from "@/lib/config";
 
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID
-  ? parseInt(process.env.NEXT_PUBLIC_CHAIN_ID)
-  : 31337;
-
-const CHAIN_ID_STRING = CHAIN_ID.toString() as "31337" | "11155111" | "338";
 const contractAddress = contractAddresses[CHAIN_ID_STRING]?.AgentNFT as `0x${string}`;
-
-// Define Cronos Testnet chain for viem
-const cronosTestnet: Chain = {
-  id: 338,
-  name: "Cronos Testnet",
-  nativeCurrency: {
-    name: "Cronos",
-    symbol: "TCRO",
-    decimals: 18,
-  },
-  rpcUrls: {
-    default: {
-      http: ["https://evm-t3.cronos.org"],
-    },
-  },
-  blockExplorers: {
-    default: {
-      name: "Cronos Explorer",
-      url: "https://explorer.cronos.org/testnet",
-    },
-  },
-  testnet: true,
-};
-
-function getChain(): Chain {
-  switch (CHAIN_ID) {
-    case 11155111:
-      return sepolia;
-    case 338:
-      return cronosTestnet;
-    default:
-      return hardhat;
-  }
-}
 
 function getPublicClient() {
   return createPublicClient({
-    chain: getChain(),
-    transport: http(process.env.RPC_URL),
+    chain: getViemChain(),
+    transport: http(process.env.RPC_URL || "https://evm-t3.cronos.org"),
   });
 }
 

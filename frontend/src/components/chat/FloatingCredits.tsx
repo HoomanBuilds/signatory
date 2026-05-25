@@ -6,8 +6,8 @@ import { useAccount, usePublicClient } from "wagmi";
 import AgentCreditsABI from "@/constants/AgentCredits.json";
 import contractAddresses from "@/constants/contractAddresses.json";
 
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || "11155111";
-const CHAIN_ID_STRING = CHAIN_ID as "31337" | "11155111";
+const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID || "338";
+const CHAIN_ID_STRING = CHAIN_ID as "31337" | "11155111" | "338";
 const NFT_CONTRACT_ADDRESS = contractAddresses[CHAIN_ID_STRING]?.AgentNFT;
 const CREDITS_CONTRACT_ADDRESS = contractAddresses[CHAIN_ID_STRING]?.AgentCredits;
 

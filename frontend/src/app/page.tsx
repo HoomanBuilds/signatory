@@ -58,9 +58,10 @@ export default function Home() {
     totalVolume: "0",
   });
 
-  const chainId = (process.env.NEXT_PUBLIC_CHAIN_ID || "31337") as
+  const chainId = (process.env.NEXT_PUBLIC_CHAIN_ID || "338") as
     | "31337"
-    | "11155111";
+    | "11155111"
+    | "338";
 
   const { data: totalSupply } = useReadContract({
     address: contractAddresses[chainId].AgentNFT as `0x${string}`,

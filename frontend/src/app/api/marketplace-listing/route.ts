@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http } from "viem";
-import { hardhat, sepolia } from "viem/chains";
 import AgentMarketplaceABI from "@/constants/AgentMarketplace.json";
 import AgentNFTABI from "@/constants/AgentNFT.json";
 import contractAddresses from "@/constants/contractAddresses.json";
 import { resolveIPFS } from "@/lib/pinata";
-
-const CHAIN_ID = process.env.NEXT_PUBLIC_CHAIN_ID
-  ? parseInt(process.env.NEXT_PUBLIC_CHAIN_ID)
-  : 31337;
+import { CHAIN_ID, getViemChain } from "@/lib/config";
 
 const publicClient = createPublicClient({
-  chain: CHAIN_ID === 11155111 ? sepolia : hardhat,
-  transport: http(process.env.RPC_URL),
+  chain: getViemChain(),
+  transport: http(process.env.RPC_URL || "https://evm-t3.cronos.org"),
 });
 
 export async function GET() {
   try {
-    const CHAIN_ID_STRING = CHAIN_ID.toString() as "31337" | "11155111";
+    const CHAIN_ID_STRING = CHAIN_ID.toString() as "31337" | "11155111" | "338";
 
     // Get total supply of NFTs
     const totalSupply = (await publicClient.readContract({
@@ -133,7 +129,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Token ID required" }, { status: 400 });
     }
 
-    const CHAIN_ID_STRING = CHAIN_ID.toString() as "31337" | "11155111";
+    const CHAIN_ID_STRING = CHAIN_ID.toString() as "31337" | "11155111" | "338";
 
     // Fetch listing from marketplace contract using the public mapping
     const listing = (await publicClient.readContract({

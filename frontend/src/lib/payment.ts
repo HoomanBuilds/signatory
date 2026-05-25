@@ -1,17 +1,15 @@
 import { createPublicClient, http, formatEther, decodeFunctionData } from "viem";
-import { sepolia } from "viem/chains";
 import contractAddresses from "@/constants/contractAddresses.json";
 import AgentCreditsABI from "@/constants/AgentCredits.json";
 import RevenueShareABI from "@/constants/RevenueShare.json";
-
+import { CHAIN_ID_STRING, getViemChain } from "@/lib/config";
 
 const publicClient = createPublicClient({
-  chain: sepolia,
-  transport: http(),
+  chain: getViemChain(),
+  transport: http(process.env.RPC_URL || "https://evm-t3.cronos.org"),
 });
 
-const CHAIN_ID = "11155111";
-export const AGENT_CREDITS_ADDRESS = (contractAddresses as any)[CHAIN_ID]?.AgentCredits;
+export const AGENT_CREDITS_ADDRESS = (contractAddresses as any)[CHAIN_ID_STRING]?.AgentCredits;
 export const AGENT_CREDITS_ABI_EXPORT = AgentCreditsABI;
 
 /**
@@ -93,7 +91,7 @@ export async function verifyCreditPurchase(txHash: string, expectedAmount: numbe
 /**
  * Verify Revenue Share payment transaction
  */
-export const REVENUE_SHARE_ADDRESS = (contractAddresses as any)[CHAIN_ID]?.RevenueShare;
+export const REVENUE_SHARE_ADDRESS = (contractAddresses as any)[CHAIN_ID_STRING]?.RevenueShare;
 export const REVENUE_SHARE_ABI_EXPORT = RevenueShareABI;
 
 export async function verifyRevenueShare(txHash: string, expectedAmount: number, agentId: number, userAddress: string) {
@@ -118,7 +116,7 @@ export async function verifyRevenueShare(txHash: string, expectedAmount: number,
       data: tx.input,
     });
 
-    if (functionName !== "purchaseSession") {
+    if (functionName !== "purchaseSession" && functionName !== "purchaseCredits") {
       throw new Error("Invalid function call");
     }
 

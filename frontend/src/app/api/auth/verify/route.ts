@@ -2,15 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { parseSiweMessage, validateSiweMessage } from "viem/siwe";
 import { createPublicClient, http } from "viem";
-import { sepolia, hardhat } from "viem/chains";
-import { CHAIN_ID } from "@/lib/config";
-
-// Select chain based on environment
-const selectedChain = CHAIN_ID === 11155111 ? sepolia : hardhat;
+import { getViemChain } from "@/lib/config";
 
 const publicClient = createPublicClient({
-  chain: selectedChain,
-  transport: http(),
+  chain: getViemChain(),
+  transport: http(process.env.RPC_URL || "https://evm-t3.cronos.org"),
 });
 
 // 7 days in seconds
