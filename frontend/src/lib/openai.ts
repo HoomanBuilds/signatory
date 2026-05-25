@@ -1,5 +1,16 @@
-import { openai } from "@ai-sdk/openai";
+import { createOpenAI, openai } from "@ai-sdk/openai";
 import { generateText, streamText } from "ai";
+
+// DeepSeek provider (OpenAI-compatible API)
+const deepseek = createOpenAI({
+  baseURL: "https://api.deepseek.com",
+  apiKey: process.env.DEEPSEEK_API_KEY,
+});
+
+// Chat model — uses DeepSeek V4 when configured, falls back to OpenAI
+const chatModel = process.env.DEEPSEEK_API_KEY
+  ? deepseek("deepseek-chat")
+  : openai("gpt-4o-mini");
 
 /**
  * Generate a meme token logo image using DALL-E 3 (raw API call)
@@ -109,7 +120,7 @@ export async function generateAgentResponse(
   const systemPrompt = buildPersonalityPrompt(personality);
 
   const { text } = await generateText({
-    model: openai("gpt-4o-mini"),
+    model: chatModel,
     system: systemPrompt,
     messages: [
       ...chatHistory.map((msg) => ({
@@ -137,7 +148,7 @@ export async function streamAgentResponse(
   const systemPrompt = buildPersonalityPrompt(personality);
 
   const result = streamText({
-    model: openai("gpt-4o-mini"),
+    model: chatModel,
     system: systemPrompt,
     messages: [
       ...chatHistory.map((msg) => ({
