@@ -1,6 +1,4 @@
 import { ChromaClient } from "chromadb";
-import { openai } from "@ai-sdk/openai";
-import { embed } from "ai";
 
 type Collection = any;
 
@@ -51,62 +49,12 @@ export async function getAgentMemoryCollection(): Promise<Collection> {
   const client = getChromaClient();
 
   try {
-    // @ts-ignore - We need to register this to silence warnings
-    const { registerEmbeddingFunction } = require("chromadb");
-
-    class DummyEmbeddingFunction {
-      public name: string = "dummy_embedding_function";
-
-      public async generate(texts: string[]): Promise<number[][]> {
-
-        return texts.map(() => []);
-      }
-
-      public getConfig() {
-        return { type: "known", name: this.name };
-      }
-
-      public static buildFromConfig() {
-        return new DummyEmbeddingFunction();
-      }
-    }
-
-    // Register it so Chroma knows about it
-    try {
-      registerEmbeddingFunction("dummy_embedding_function", DummyEmbeddingFunction);
-    } catch (e) {
-      // Ignore if already registered
-    }
-
     return await client.getOrCreateCollection({
-      name: "agent_memories_v4",
+      name: "agent_memories_v5",
       metadata: { description: "Chat memories for AI agents" },
-      embeddingFunction: new DummyEmbeddingFunction(),
     });
   } catch (error) {
     console.error("Error getting collection:", error);
-    throw error;
-  }
-}
-
-/**
- * Generate embedding for text using OpenAI via Vercel AI SDK
- */
-export async function generateEmbedding(text: string): Promise<number[]> {
-  if (!text || typeof text !== 'string' || text.trim().length === 0) {
-    console.warn(`[generateEmbedding] Skipping empty text, returning empty embedding`);
-    return new Array(1536).fill(0);
-  }
-
-  try {
-    console.log(`[generateEmbedding] Generating embedding for text: "${text.substring(0, 50)}..."`);
-    const { embedding } = await embed({
-      model: openai.embedding("text-embedding-3-small"),
-      value: text.trim(),
-    });
-    return embedding;
-  } catch (error) {
-    console.error("[generateEmbedding] Error generating embedding:", error);
     throw error;
   }
 }
@@ -124,14 +72,13 @@ export async function storeMessage(
 ): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     const collection = await getAgentMemoryCollection();
-    const embedding = await generateEmbedding(content);
 
     const id = `${agentId}_${userAddress}_${timestamp}_${role}`;
     const session = sessionId || "default";
 
     await collection.add({
       ids: [id],
-      embeddings: [embedding],
+      documents: [content],
       metadatas: [
         {
           agentId: agentId.toString(),
@@ -141,7 +88,6 @@ export async function storeMessage(
           sessionId: session,
         },
       ],
-      documents: [content],
     });
 
     return { success: true, id };
@@ -170,7 +116,6 @@ export async function searchMemories(
 > {
   try {
     const collection = await getAgentMemoryCollection();
-    const queryEmbedding = await generateEmbedding(query);
 
     const whereClause: any = {
       $and: [{ agentId: agentId.toString() }, { userAddress: userAddress }],
@@ -181,7 +126,7 @@ export async function searchMemories(
     }
 
     const results = await collection.query({
-      queryEmbeddings: [queryEmbedding],
+      queryTexts: [query],
       nResults: limit,
       where: whereClause,
     });
@@ -406,37 +351,9 @@ export async function getKnowledgeBaseCollection(): Promise<Collection> {
   const client = getChromaClient();
 
   try {
-    // @ts-ignore - We need to register this to silence warnings
-    const { registerEmbeddingFunction } = require("chromadb");
-
-    class DummyEmbeddingFunction {
-      public name: string = "dummy_embedding_function";
-
-      public async generate(texts: string[]): Promise<number[][]> {
-        return texts.map(() => []);
-      }
-
-      public getConfig() {
-        return { type: "known", name: this.name };
-      }
-
-      public static buildFromConfig() {
-        return new DummyEmbeddingFunction();
-      }
-    }
-
-    try {
-      registerEmbeddingFunction(
-        "dummy_embedding_function",
-        DummyEmbeddingFunction
-      );
-    } catch (e) {
-    }
-
     return await client.getOrCreateCollection({
-      name: "agent_knowledge_base",
+      name: "agent_knowledge_base_v2",
       metadata: { description: "Knowledge base documents for AI agents" },
-      embeddingFunction: new DummyEmbeddingFunction(),
     });
   } catch (error) {
     console.error("Error getting knowledge base collection:", error);
@@ -454,10 +371,6 @@ export async function addToKnowledgeBase(
   try {
     const collection = await getKnowledgeBaseCollection();
 
-    const embeddings = await Promise.all(
-      documents.map((doc) => generateEmbedding(doc))
-    );
-
     const ids = documents.map(
       (_, idx) => `${knowledgeBaseId}_${Date.now()}_${idx}`
     );
@@ -469,9 +382,8 @@ export async function addToKnowledgeBase(
 
     await collection.add({
       ids,
-      embeddings,
-      metadatas,
       documents,
+      metadatas,
     });
 
     return { success: true };
@@ -491,10 +403,9 @@ export async function searchKnowledgeBase(
 ): Promise<string[]> {
   try {
     const collection = await getKnowledgeBaseCollection();
-    const queryEmbedding = await generateEmbedding(query);
 
     const results = await collection.query({
-      queryEmbeddings: [queryEmbedding],
+      queryTexts: [query],
       nResults: limit,
       where: { knowledgeBaseId },
     });

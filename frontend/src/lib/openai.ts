@@ -1,16 +1,8 @@
-import { createOpenAI, openai } from "@ai-sdk/openai";
+import { openai } from "@ai-sdk/openai";
 import { generateText, streamText } from "ai";
 
-// DeepSeek provider (OpenAI-compatible API)
-const deepseek = createOpenAI({
-  baseURL: "https://api.deepseek.com",
-  apiKey: process.env.DEEPSEEK_API_KEY,
-});
-
-// Chat model — uses DeepSeek V4 when configured, falls back to OpenAI
-const chatModel = process.env.DEEPSEEK_API_KEY
-  ? deepseek("deepseek-chat")
-  : openai("gpt-4o-mini");
+const DEEPSEEK_API_KEY = process.env.DEEPSEEK_API_KEY;
+const USE_DEEPSEEK = !!DEEPSEEK_API_KEY;
 
 /**
  * Generate a meme token logo image using DALL-E 3 (raw API call)
@@ -109,6 +101,219 @@ If you are provided with "Context from Knowledge Base", use that information to 
 Always follow safety, ethical, and legal guidelines. Avoid harmful advice or explicit content.`;
 }
 
+// ============ DeepSeek via raw fetch ============
+
+/**
+ * Convert Vercel AI SDK tool definitions to OpenAI function format
+ * Extracts JSON schema from the tool's Zod inputSchema
+ */
+function convertToolsForAPI(tools: Record<string, any>): any[] {
+  return Object.entries(tools).map(([name, t]) => {
+    const schema = t.parameters;
+    const properties: Record<string, any> = {};
+    const required: string[] = [];
+
+    // Extract properties from Zod schema shape
+    if (schema?._def?.typeName === "ZodObject" || schema?.shape) {
+      const shape = schema.shape || schema._def?.shape?.() || {};
+      for (const [key, val] of Object.entries(shape) as any[]) {
+        properties[key] = {
+          type: "string",
+          description: val?._def?.description || "",
+        };
+        // If not optional, add to required
+        if (val?._def?.typeName !== "ZodOptional") {
+          required.push(key);
+        }
+      }
+    }
+
+    return {
+      type: "function",
+      function: {
+        name,
+        description: t.description || "",
+        parameters: {
+          type: "object",
+          properties,
+          required,
+        },
+      },
+    };
+  });
+}
+
+/**
+ * Parse SSE chunks from a streaming response
+ */
+async function* parseSSE(response: Response) {
+  const reader = response.body!.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split("\n");
+    buffer = lines.pop() || "";
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (!trimmed || !trimmed.startsWith("data: ")) continue;
+      const data = trimmed.slice(6);
+      if (data === "[DONE]") return;
+      try {
+        yield JSON.parse(data);
+      } catch {}
+    }
+  }
+}
+
+/**
+ * Stream chat response from DeepSeek via raw fetch
+ * Handles tool calls by executing them and appending results to stream
+ */
+async function deepseekStream(
+  systemPrompt: string,
+  chatHistory: Array<{ role: string; content: string }>,
+  userMessage: string,
+  temperature: number,
+  tools?: Record<string, any>
+): Promise<Response> {
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
+    { role: "user", content: userMessage },
+  ];
+
+  const body: any = {
+    model: "deepseek-chat",
+    stream: true,
+    temperature,
+    messages,
+  };
+
+  if (tools && Object.keys(tools).length > 0) {
+    body.tools = convertToolsForAPI(tools);
+  }
+
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${err}`);
+  }
+
+  const encoder = new TextEncoder();
+  const toolCalls: Array<{ id: string; name: string; arguments: string }> = [];
+
+  const stream = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of parseSSE(response)) {
+          const choice = chunk.choices?.[0];
+          if (!choice) continue;
+
+          // Stream text content
+          if (choice.delta?.content) {
+            controller.enqueue(encoder.encode(choice.delta.content));
+          }
+
+          // Accumulate tool calls
+          if (choice.delta?.tool_calls) {
+            for (const tc of choice.delta.tool_calls) {
+              const idx = tc.index ?? 0;
+              if (!toolCalls[idx]) {
+                toolCalls[idx] = { id: tc.id || "", name: "", arguments: "" };
+              }
+              if (tc.function?.name) toolCalls[idx].name = tc.function.name;
+              if (tc.function?.arguments) toolCalls[idx].arguments += tc.function.arguments;
+              if (tc.id) toolCalls[idx].id = tc.id;
+            }
+          }
+        }
+
+        // Execute accumulated tool calls and append results
+        if (toolCalls.length > 0 && tools) {
+          for (const tc of toolCalls) {
+            if (!tc.name || !tools[tc.name]?.execute) continue;
+            try {
+              console.log(`[DeepSeek] Executing tool: ${tc.name}`);
+              const args = JSON.parse(tc.arguments);
+              const result = await tools[tc.name].execute(args);
+              const resultStr = String(result || "");
+              console.log(`[DeepSeek] Tool result: ${resultStr.substring(0, 100)}...`);
+              if (resultStr) {
+                controller.enqueue(encoder.encode(resultStr));
+              }
+            } catch (err: any) {
+              console.error(`[DeepSeek] Tool ${tc.name} error:`, err.message);
+            }
+          }
+        }
+
+        controller.close();
+      } catch (error) {
+        console.error("[DeepSeek] Stream error:", error);
+        controller.error(error);
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+      "Transfer-Encoding": "chunked",
+    },
+  });
+}
+
+/**
+ * Non-streaming chat from DeepSeek
+ */
+async function deepseekGenerate(
+  systemPrompt: string,
+  chatHistory: Array<{ role: string; content: string }>,
+  userMessage: string,
+  temperature: number
+): Promise<string> {
+  const response = await fetch("https://api.deepseek.com/v1/chat/completions", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: "deepseek-chat",
+      temperature,
+      messages: [
+        { role: "system", content: systemPrompt },
+        ...chatHistory.map((m) => ({ role: m.role, content: m.content })),
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const err = await response.text();
+    throw new Error(`DeepSeek API error: ${response.status} - ${err}`);
+  }
+
+  const data = await response.json();
+  return data.choices?.[0]?.message?.content || "";
+}
+
+// ============ Public API ============
+
 /**
  * Generate AI response with personality injection
  */
@@ -118,9 +323,15 @@ export async function generateAgentResponse(
   chatHistory: Array<{ role: "user" | "assistant"; content: string }> = []
 ) {
   const systemPrompt = buildPersonalityPrompt(personality);
+  const temperature = personality.model?.temperature || 0.8;
 
+  if (USE_DEEPSEEK) {
+    return deepseekGenerate(systemPrompt, chatHistory, userMessage, temperature);
+  }
+
+  // Fallback: OpenAI via Vercel AI SDK
   const { text } = await generateText({
-    model: chatModel,
+    model: openai("gpt-4o-mini"),
     system: systemPrompt,
     messages: [
       ...chatHistory.map((msg) => ({
@@ -129,7 +340,7 @@ export async function generateAgentResponse(
       })),
       { role: "user" as const, content: userMessage },
     ],
-    temperature: personality.model?.temperature || 0.8,
+    temperature,
   });
 
   return text;
@@ -137,7 +348,7 @@ export async function generateAgentResponse(
 
 /**
  * Generate AI response with streaming
- * Handles both text and tool call results by creating a custom stream
+ * Handles both text and tool call results
  */
 export async function streamAgentResponse(
   personality: any,
@@ -146,9 +357,15 @@ export async function streamAgentResponse(
   tools?: any
 ) {
   const systemPrompt = buildPersonalityPrompt(personality);
+  const temperature = personality.model?.temperature || 0.8;
 
+  if (USE_DEEPSEEK) {
+    return deepseekStream(systemPrompt, chatHistory, userMessage, temperature, tools);
+  }
+
+  // Fallback: OpenAI via Vercel AI SDK
   const result = streamText({
-    model: chatModel,
+    model: openai("gpt-4o-mini"),
     system: systemPrompt,
     messages: [
       ...chatHistory.map((msg) => ({
@@ -157,39 +374,29 @@ export async function streamAgentResponse(
       })),
       { role: "user" as const, content: userMessage },
     ],
-    temperature: personality.model?.temperature || 0.8,
+    temperature,
     tools,
   });
 
-  // Create a custom stream that includes tool results
   const encoder = new TextEncoder();
-  
+
   const stream = new ReadableStream({
     async start(controller) {
       try {
-        let textContent = "";
-        
-        // Stream the text content
         for await (const chunk of result.textStream) {
-          textContent += chunk;
           controller.enqueue(encoder.encode(chunk));
         }
-        
-        // After text streaming, check for tool results
+
         const toolResultsArr = await result.toolResults;
         if (toolResultsArr && toolResultsArr.length > 0) {
-          console.log("[AI] Tool results found:", toolResultsArr);
           for (const toolResult of toolResultsArr) {
-            // toolResult contains toolCallId, toolName, input, and output
             const resultStr = String((toolResult as any).output || "");
-            console.log("[AI] Including tool result in stream:", resultStr);
-            // Append tool result to stream
             if (resultStr) {
               controller.enqueue(encoder.encode(resultStr));
             }
           }
         }
-        
+
         controller.close();
       } catch (error) {
         console.error("[AI] Streaming error:", error);
