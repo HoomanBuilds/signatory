@@ -12,6 +12,7 @@ import contractAddresses from "@/constants/contractAddresses.json";
 import AgentCard from "@/components/agent/AgentCard";
 import Marquee from "react-fast-marquee";
 import CountUp from "@/components/CountUp";
+import SigningTerminal from "@/components/hero/SigningTerminal";
 import { motion } from "framer-motion";
 
 interface AgentData {
@@ -164,70 +165,79 @@ export default function Home() {
         {/* ═══════════════════════════════════════════════════════════
             HERO — Terminal Incantation + Pixel Logotype
         ═══════════════════════════════════════════════════════════ */}
-        <section className="relative min-h-[92vh] flex flex-col justify-center px-6 lg:px-16 overflow-hidden bg-hero-shaft">
-          <div className="relative z-10 max-w-7xl mx-auto w-full">
-            {/* Main display — pixel logotype, snaps in with steps() */}
-            <motion.h1
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 40 }}
-              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-              className="font-pixel text-[72px] md:text-[128px] lg:text-[176px] leading-[0.85] tracking-tight text-ink mb-6"
-              style={{ fontSize: "var(--text-display-2xl)" }}
-            >
-              SIGN<span className="text-sigil">ATORY</span>
-            </motion.h1>
+        <section className="relative h-screen flex flex-col justify-center px-4 sm:px-6 lg:px-16 overflow-hidden bg-hero-shaft">
+          <div className="relative z-10 w-full">
+            <div className="flex flex-col xl:flex-row xl:items-center gap-8 xl:gap-10 2xl:gap-16">
+              {/* Left column — heading, tagline, CTAs */}
+              <div className="min-w-0 flex-1">
+                <motion.h1
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 40 }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  className="font-pixel text-[48px] sm:text-[72px] md:text-[100px] lg:text-[128px] xl:text-[110px] 2xl:text-[140px] leading-[0.85] tracking-tight text-ink mb-6"
+                >
+                  SIGN<span className="text-sigil">ATORY</span>
+                </motion.h1>
 
-            {/* Tagline + CTAs row */}
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8 mb-12">
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: heroReady ? 1 : 0 }}
-                transition={{ delay: 0.3, duration: 0.6 }}
-                className="font-body-alt max-w-md text-base md:text-lg text-ink-60 leading-relaxed"
-              >
-                The cryptographic seal for autonomous agents.
-                Every on-chain action is a ritual, not a request.
-              </motion.p>
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: heroReady ? 1 : 0 }}
+                  transition={{ delay: 0.3, duration: 0.6 }}
+                  className="font-body-alt max-w-md text-base md:text-lg text-ink-60 leading-relaxed mb-10"
+                >
+                  The cryptographic seal for autonomous agents.
+                  Every on-chain action is a ritual, not a request.
+                </motion.p>
 
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 20 }}
+                  transition={{ delay: 0.4, duration: 0.5 }}
+                  className="flex flex-wrap gap-3 mb-12"
+                >
+                  <Link href="/create" className="btn-primary flex items-center gap-3">
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    Initialize
+                  </Link>
+                  <Link href="/agents" className="btn-secondary flex items-center gap-3">
+                    Browse
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
+
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: heroReady ? 1 : 0 }}
+                  transition={{ delay: 0.5, duration: 0.6 }}
+                  className="flex flex-col sm:flex-row items-start sm:items-center gap-6"
+                >
+                  <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-40">
+                    [ powered_by ]
+                  </span>
+                  <div className="flex items-center gap-10">
+                    <a href="https://github.com/goat-sdk" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
+                      <img src="/goat.png" alt="GOAT SDK" className="h-6 w-auto object-contain" />
+                    </a>
+                    <a href="https://www.x402.org/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
+                      <img src="/x402.svg" alt="X402 Protocol" className="h-3.5 w-auto object-contain brightness-0 invert" />
+                    </a>
+                    <a href="https://www.litprotocol.com/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
+                      <img src="/lit.svg" alt="Lit Protocol" className="h-5 w-auto object-contain" />
+                    </a>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Right column — live signing terminal */}
               <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: heroReady ? 1 : 0, y: heroReady ? 0 : 20 }}
-                transition={{ delay: 0.4, duration: 0.5 }}
-                className="flex flex-wrap gap-3"
+                initial={{ opacity: 0, x: 30 }}
+                animate={{ opacity: heroReady ? 1 : 0, x: heroReady ? 0 : 30 }}
+                transition={{ delay: 0.6, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+                className="w-full xl:w-[400px] 2xl:w-[460px] xl:shrink-0"
               >
-                <Link href="/create" className="btn-primary flex items-center gap-3">
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  Initialize
-                </Link>
-                <Link href="/agents" className="btn-secondary flex items-center gap-3">
-                  Browse
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
+                <SigningTerminal />
               </motion.div>
             </div>
-
-            {/* Partner row — full opacity */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: heroReady ? 1 : 0 }}
-              transition={{ delay: 0.5, duration: 0.6 }}
-              className="mt-10 flex flex-col sm:flex-row items-start sm:items-center gap-6"
-            >
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-ink-40">
-                [ powered_by ]
-              </span>
-              <div className="flex items-center gap-10">
-                <a href="https://github.com/goat-sdk" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                  <img src="/goat.png" alt="GOAT SDK" className="h-6 w-auto object-contain" />
-                </a>
-                <a href="https://www.x402.org/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                  <img src="/x402.svg" alt="X402 Protocol" className="h-3.5 w-auto object-contain brightness-0 invert" />
-                </a>
-                <a href="https://www.litprotocol.com/" target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                  <img src="/lit.svg" alt="Lit Protocol" className="h-5 w-auto object-contain" />
-                </a>
-              </div>
-            </motion.div>
           </div>
         </section>
 
