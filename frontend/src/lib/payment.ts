@@ -103,7 +103,8 @@ export async function verifyRevenueShare(txHash: string, expectedAmount: number,
       throw new Error("Transaction failed");
     }
 
-    if (tx.to?.toLowerCase() !== AGENT_CREDITS_ADDRESS.toLowerCase()) {
+    if (tx.to?.toLowerCase() !== REVENUE_SHARE_ADDRESS?.toLowerCase() &&
+        tx.to?.toLowerCase() !== AGENT_CREDITS_ADDRESS?.toLowerCase()) {
       throw new Error("Invalid transaction recipient");
     }
 

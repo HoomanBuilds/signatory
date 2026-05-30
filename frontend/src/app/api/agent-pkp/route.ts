@@ -6,8 +6,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { mintPKPForAgent, checkLitBalance } from "@/lib/lit-protocol";
 import { ethers } from "ethers";
 import { getCronosTestnetProvider } from "@/lib/ethers-provider";
+import { getAuthenticatedAddress } from "@/lib/auth";
 
 import AgentPKPAbi from "@/constants/AgentPKP.json";
+import AgentNFTAbi from "@/constants/AgentNFT.json";
 import contractAddresses from "@/constants/contractAddresses.json";
 
 const CRONOS_TESTNET_CHAIN_ID = "338";
@@ -22,6 +24,14 @@ type ChainAddresses = {
 
 export async function POST(request: NextRequest) {
   try {
+    const authenticatedAddress = await getAuthenticatedAddress();
+    if (!authenticatedAddress) {
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { agentTokenId, userAddress } = body;
 
@@ -29,6 +39,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: "Missing agentTokenId or userAddress" },
         { status: 400 }
+      );
+    }
+
+    // Verify caller owns the agent
+    const authProvider = getCronosTestnetProvider();
+    const chainAddrs = (contractAddresses as Record<string, ChainAddresses>)[CRONOS_TESTNET_CHAIN_ID];
+    const nftContract = new ethers.Contract(chainAddrs.AgentNFT!, AgentNFTAbi, authProvider);
+    const owner = await nftContract.ownerOf(agentTokenId);
+    if (owner.toLowerCase() !== authenticatedAddress.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Only the agent owner can register a PKP" },
+        { status: 403 }
       );
     }
 

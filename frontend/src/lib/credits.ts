@@ -87,7 +87,7 @@ export async function spendUserCredits(
 
     return {
       success: true,
-      txHash: receipt.hash,
+      txHash: receipt.transactionHash,
     };
   } catch (error: any) {
     console.error("Error spending credits:", error);
@@ -163,12 +163,13 @@ export async function useSessionCredit(
 
     // Use credit - new signature includes nftContract
     const tx = await contract.useSessionCredit(userAddress, nftContract, agentId);
-    
-    console.log(`Session credit used for ${userAddress} (Agent ${agentId}): ${tx.hash}`);
+    const receipt = await tx.wait();
+
+    console.log(`Session credit used for ${userAddress} (Agent ${agentId}): ${receipt.transactionHash}`);
 
     return {
       success: true,
-      txHash: tx.hash,
+      txHash: receipt.transactionHash,
     };
   } catch (error: any) {
     console.error("Error using session credit:", error);

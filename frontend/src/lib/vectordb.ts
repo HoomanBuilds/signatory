@@ -3,6 +3,27 @@ import { ChromaClient } from "chromadb";
 type Collection = any;
 
 /**
+ * Inline character-bigram embedding function.
+ * No external ML dependency — works with Turbopack, no ONNX issues.
+ * Good enough for recent-message retrieval and knowledge base chunk matching.
+ */
+const bigramEmbeddingFunction = {
+  generate: async (texts: string[]): Promise<number[][]> => {
+    const DIM = 128;
+    return texts.map((text) => {
+      const vec = new Float32Array(DIM).fill(0);
+      const s = text.toLowerCase();
+      for (let i = 0; i < s.length - 1; i++) {
+        vec[s.charCodeAt(i) % DIM] += 1;
+        vec[(s.charCodeAt(i) + s.charCodeAt(i + 1)) % DIM] += 0.5;
+      }
+      const norm = Math.sqrt(Array.from(vec).reduce((a, v) => a + v * v, 0)) || 1;
+      return Array.from(vec).map((v) => v / norm);
+    });
+  },
+};
+
+/**
  * ChromaDB client singleton
  * IMPORTANT: Server-side only (API routes, Server Actions, Server Components)
  */
@@ -50,8 +71,9 @@ export async function getAgentMemoryCollection(): Promise<Collection> {
 
   try {
     return await client.getOrCreateCollection({
-      name: "agent_memories_v5",
+      name: "agent_memories_v6",
       metadata: { description: "Chat memories for AI agents" },
+      embeddingFunction: bigramEmbeddingFunction,
     });
   } catch (error) {
     console.error("Error getting collection:", error);
@@ -352,8 +374,9 @@ export async function getKnowledgeBaseCollection(): Promise<Collection> {
 
   try {
     return await client.getOrCreateCollection({
-      name: "agent_knowledge_base_v2",
+      name: "agent_knowledge_base_v3",
       metadata: { description: "Knowledge base documents for AI agents" },
+      embeddingFunction: bigramEmbeddingFunction,
     });
   } catch (error) {
     console.error("Error getting knowledge base collection:", error);

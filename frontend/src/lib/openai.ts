@@ -109,7 +109,7 @@ Always follow safety, ethical, and legal guidelines. Avoid harmful advice or exp
  */
 function convertToolsForAPI(tools: Record<string, any>): any[] {
   return Object.entries(tools).map(([name, t]) => {
-    const schema = t.parameters;
+    const schema = t.inputSchema || t.parameters;
     const properties: Record<string, any> = {};
     const required: string[] = [];
 

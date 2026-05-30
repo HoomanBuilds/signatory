@@ -42,7 +42,7 @@ export async function recordAgentChat(
 
         return {
             success: true,
-            txHash: receipt.hash,
+            txHash: receipt.transactionHash,
         };
     } catch (error: any) {
         console.error(`Error recording chat for agent ${tokenId}:`, error);

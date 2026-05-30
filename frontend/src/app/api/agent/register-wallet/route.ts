@@ -2,17 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBackendWallet } from "@/lib/credits";
 import { ethers } from "ethers";
 import RevenueShareABI from "@/constants/RevenueShare.json";
+import AgentNFTABI from "@/constants/AgentNFT.json";
 import contractAddresses from "@/constants/contractAddresses.json";
 import { getAuthenticatedAddress } from "@/lib/auth";
 
-const CHAIN_ID = "11155111"; // Sepolia
-const REVENUE_SHARE_ADDRESS = (contractAddresses as any)[CHAIN_ID]?.RevenueShare;
+const CHAIN_ID = "338";
+const addresses = (contractAddresses as any)[CHAIN_ID];
 
 export async function POST(req: NextRequest) {
   try {
-    // Verify SIWE Authentication
     const authenticatedAddress = await getAuthenticatedAddress();
-    
+
     if (!authenticatedAddress) {
       return NextResponse.json(
         { error: "Authentication required. Please sign in with your wallet." },
@@ -37,8 +37,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Verify caller owns the agent
+    const nftContract = new ethers.Contract(
+      addresses.AgentNFT,
+      AgentNFTABI,
+      wallet.provider
+    );
+    const owner = await nftContract.ownerOf(agentId);
+    if (owner.toLowerCase() !== authenticatedAddress.toLowerCase()) {
+      return NextResponse.json(
+        { error: "Only the agent owner can register a wallet" },
+        { status: 403 }
+      );
+    }
+
     const contract = new ethers.Contract(
-      REVENUE_SHARE_ADDRESS,
+      addresses.RevenueShare,
       RevenueShareABI,
       wallet
     );
