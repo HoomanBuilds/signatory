@@ -56,6 +56,9 @@ export default function Footer() {
               <a href="https://github.com/goat-sdk" target="_blank" rel="noopener noreferrer" className="opacity-30 hover:opacity-60 transition-opacity">
                 <img src="/goat.png" alt="GOAT SDK" className="h-5 w-auto object-contain grayscale" />
               </a>
+              <a href="https://www.x402.org/" target="_blank" rel="noopener noreferrer" className="opacity-30 hover:opacity-60 transition-opacity">
+                <img src="/x402.svg" alt="X402 Protocol" className="h-3.5 w-auto object-contain brightness-0 invert grayscale" />
+              </a>
               <a href="https://www.litprotocol.com/" target="_blank" rel="noopener noreferrer" className="opacity-30 hover:opacity-60 transition-opacity">
                 <img src="/lit.svg" alt="Lit Protocol" className="h-4 w-auto object-contain grayscale" />
               </a>
