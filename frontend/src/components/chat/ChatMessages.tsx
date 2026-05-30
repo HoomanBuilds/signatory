@@ -99,7 +99,7 @@ export default function ChatMessages({
   }
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide bg-background">
+    <div data-lenis-prevent className="h-0 flex-1 overflow-y-scroll p-6 space-y-6 bg-background scrollbar-chat">
       {messages.map((message, index) => (
         <div
           key={index}

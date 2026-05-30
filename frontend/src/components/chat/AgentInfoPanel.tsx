@@ -27,10 +27,10 @@ export default function AgentInfoPanel({
   isClearing,
 }: AgentInfoPanelProps) {
   return (
-    <div className="w-80 border-r border-ink-08 bg-background flex flex-col h-full">
+    <div className="w-80 border-r border-ink-08 bg-background flex flex-col h-full overflow-hidden shrink-0">
 
       {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-hide">
+      <div data-lenis-prevent className="h-0 flex-1 overflow-y-scroll p-6 space-y-6 scrollbar-hide">
         {/* Agent Image */}
         <div className="shrink-0">
           <div className="w-full aspect-square bg-surface-2 flex items-center justify-center border border-ink-08 overflow-hidden">

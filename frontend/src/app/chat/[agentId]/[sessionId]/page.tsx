@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAccount } from "wagmi";
 import Layout from "@/components/Layout";
+import Header from "@/components/layout/Header";
 import { useAgentNFTs, useInteractedAgents } from "@/hooks/useAgentNFTs";
 import { useChat } from "@/hooks/useChat";
 import AgentIconBar from "@/components/chat/AgentIconBar";
@@ -207,8 +208,9 @@ export default function ChatSessionPage() {
   }
 
   return (
-    <Layout>
-      <div className="flex h-[calc(100vh-80px)] bg-background">
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Header />
+      <div className="flex flex-1 min-h-0 overflow-hidden bg-background">
         <AgentIconBar
           myAgents={myAgents}
           interactedAgents={interactedAgents}
@@ -228,7 +230,7 @@ export default function ChatSessionPage() {
               isClearing={isClearing}
             />
 
-            <div className="flex-1 flex flex-col relative min-w-0">
+            <div className="flex-1 flex flex-col relative min-w-0 h-full overflow-hidden">
               {/* Floating Controls */}
               <FloatingCredits
                 agentId={agentId || 0}
@@ -320,6 +322,6 @@ export default function ChatSessionPage() {
           </div>
         )}
       </div>
-    </Layout>
+    </div>
   );
 }

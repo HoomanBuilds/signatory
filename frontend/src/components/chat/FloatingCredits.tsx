@@ -28,7 +28,7 @@ export default function FloatingCredits({ agentId, isOwner, messageCount = 0 }: 
   useEffect(() => {
     async function fetchCredits() {
       if (!address || !publicClient) return;
-      
+
       try {
         if (isOwner) {
           const balance = await publicClient.readContract({
@@ -69,7 +69,13 @@ export default function FloatingCredits({ agentId, isOwner, messageCount = 0 }: 
       }
     }
 
-    fetchCredits();
+    // On initial load, fetch immediately. After messages, delay to let tx confirm.
+    if (isInitialLoad) {
+      fetchCredits();
+    } else {
+      const timer = setTimeout(fetchCredits, 5000);
+      return () => clearTimeout(timer);
+    }
   }, [address, agentId, isOwner, publicClient, messageCount]);
 
   if (isInitialLoad) {
