@@ -166,30 +166,6 @@ export default function Home() {
         ═══════════════════════════════════════════════════════════ */}
         <section className="relative min-h-[92vh] flex flex-col justify-center px-6 lg:px-16 overflow-hidden bg-hero-shaft">
           <div className="relative z-10 max-w-7xl mx-auto w-full">
-            {/* Live status pill */}
-            <motion.div
-              initial={{ opacity: 0, y: -8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, ease: "easeOut" }}
-              className="mb-10 inline-flex items-center gap-3 rounded-full border border-ink-08 bg-white/[0.02] px-4 py-1.5 backdrop-blur-sm"
-            >
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-signal opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-signal" />
-              </span>
-              <span className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-40">
-                Autonomous Agents <span className="text-ink-60">/</span> Non-Custodial
-              </span>
-            </motion.div>
-
-            {/* Line separator */}
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: heroReady ? 1 : 0 }}
-              transition={{ duration: 0.8 }}
-              className="line-separator mb-8 origin-left"
-            />
-
             {/* Main display — pixel logotype, snaps in with steps() */}
             <motion.h1
               initial={{ opacity: 0, y: 40 }}
@@ -229,13 +205,6 @@ export default function Home() {
                 </Link>
               </motion.div>
             </div>
-
-            <motion.div
-              initial={{ scaleX: 0 }}
-              animate={{ scaleX: heroReady ? 1 : 0 }}
-              transition={{ duration: 0.8, delay: 0.3 }}
-              className="line-separator origin-right"
-            />
 
             {/* Partner row — full opacity */}
             <motion.div
