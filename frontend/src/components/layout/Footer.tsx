@@ -11,11 +11,11 @@ export default function Footer() {
             {/* Brand */}
             <div className="flex flex-col gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-7 h-7 flex items-center justify-center">
+                <div className="w-8 h-8 flex items-center justify-center">
                   <img
-                    src="/favicon.png"
+                    src="/logo.png"
                     alt="SIGNATORY"
-                    className="w-7 h-7 object-contain brightness-0 invert"
+                    className="w-8 h-8 object-contain"
                   />
                 </div>
                 <span className="font-display text-2xl md:text-3xl text-off-white">

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useState } from "react";
@@ -21,7 +22,8 @@ export default function Header() {
       <div className="w-full px-6 lg:px-16">
         <div className="flex justify-between items-center h-16">
           {/* Wordmark */}
-          <Link href="/" className="flex items-center gap-3 group shrink-0">
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            <Image src="/logo.png" alt="Signatory" width={28} height={28} className="w-7 h-7" />
             <span className="font-pixel text-base tracking-[0.04em] text-ink group-hover:text-signal transition-colors duration-300">
               SIGNATORY
             </span>
